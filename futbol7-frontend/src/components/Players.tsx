@@ -8,9 +8,14 @@ interface Player {
   number?: string;
   goals: number;
   matchesPlayed: number;
+  league: string;
 }
 
-const Players: React.FC = () => {
+interface PlayersProps {
+  league: string;
+}
+
+const Players: React.FC<PlayersProps> = ({ league }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', position: 'Portero', number: '' });
@@ -18,7 +23,17 @@ const Players: React.FC = () => {
 
   useEffect(() => {
     loadPlayers();
-  }, []);
+  }, [league]); // Recarga los jugadores cuando cambia la liga
+
+  const loadPlayers = async () => {
+    try {
+      const res = await playerAPI.getAll(league); // Pasa la liga a la API
+      setPlayers(res.data);
+    } catch (error) {
+      console.error('Error loading players:', error);
+      setPlayers([]); // Limpia los jugadores si hay un error (ej. liga sin jugadores)
+    }
+  };
 
   const handleEdit = (player: Player) => {
     setEditingPlayer(player);
@@ -32,24 +47,15 @@ const Players: React.FC = () => {
     setFormData({ name: '', position: 'Portero', number: '' });
   };
 
-  const loadPlayers = async () => {
-    try {
-      const res = await playerAPI.getAll();
-      setPlayers(res.data);
-    } catch (error) {
-      console.error('Error loading players:', error);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const dataToSave = { ...formData, league }; // Añade la liga al crear o editar
+
       if (editingPlayer) {
-        // Lógica de actualización
-        await playerAPI.update(editingPlayer._id, formData);
+        await playerAPI.update(editingPlayer._id, dataToSave);
       } else {
-        // Lógica de creación
-        await playerAPI.create(formData);
+        await playerAPI.create(dataToSave);
       }
       handleCloseModal();
       loadPlayers();
@@ -78,7 +84,7 @@ const Players: React.FC = () => {
       </div>
 
       {players.length === 0 ? (
-        <p className="text-center">No hay jugadores registrados.</p>
+        <p className="text-center">No hay jugadores registrados para la liga {league}.</p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
           {players.map(player => (
@@ -87,7 +93,7 @@ const Players: React.FC = () => {
               <p><strong>Posición:</strong> {player.position}</p>
               <p><strong>Número:</strong> {player.number || 'Sin número'}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '15px' }}>
-              <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '8px' }}>
                   <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{player.goals}</div>
                   <div style={{ fontSize: '0.8rem', color: '#666' }}>Goles</div>
                 </div>
@@ -112,7 +118,7 @@ const Players: React.FC = () => {
       {showModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', padding: '30px', borderRadius: '15px', maxWidth: '500px', width: '90%' }}>
-            <h3 style={{ marginBottom: '20px' }}>{editingPlayer ? 'Editar Jugador' : 'Agregar Nuevo Jugador'}</h3>
+            <h3 style={{ marginBottom: '20px' }}>{editingPlayer ? 'Editar Jugador' : `Agregar Jugador (${league})`}</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Nombre del Jugador</label>
@@ -144,4 +150,3 @@ const Players: React.FC = () => {
 };
 
 export default Players;
-

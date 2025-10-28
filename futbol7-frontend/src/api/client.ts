@@ -11,7 +11,7 @@ export const apiClient = axios.create({
 
 // Player API
 export const playerAPI = {
-  getAll: () => apiClient.get('/players'),
+  getAll: (league: string) => apiClient.get('/players', { params: { league } }),
   create: (data: any) => apiClient.post('/players', data),
   update: (id: string, data: any) => apiClient.put(`/players/${id}`, data),
   delete: (id: string) => apiClient.delete(`/players/${id}`),
@@ -19,9 +19,8 @@ export const playerAPI = {
 
 // Match API
 export const matchAPI = {
-  getAll: () => apiClient.get('/matches'),
+  getAll: (league: string) => apiClient.get('/matches', { params: { league } }),
   create: (data: any) => apiClient.post('/matches', data),
   update: (id: string, data: any) => apiClient.put(`/matches/${id}`, data),
   delete: (id: string) => apiClient.delete(`/matches/${id}`),
 };
-

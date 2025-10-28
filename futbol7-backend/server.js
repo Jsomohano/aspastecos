@@ -32,7 +32,11 @@ connectDB();
 // API Routes - Players
 app.get('/api/players', async (req, res) => {
     try {
-        const players = await db.collection('players').find({}).toArray();
+        const { league } = req.query;
+        if (!league) {
+            return res.status(400).json({ error: 'League query parameter is required' });
+        }
+        const players = await db.collection('players').find({ league }).toArray();
         res.json(players);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -42,7 +46,7 @@ app.get('/api/players', async (req, res) => {
 app.post('/api/players', async (req, res) => {
     try {
         const player = {
-            ...req.body,
+            ...req.body, // name, position, number, and now league
             goals: 0,
             matchesPlayed: 0,
             createdAt: new Date()
@@ -80,7 +84,11 @@ app.delete('/api/players/:id', async (req, res) => {
 // API Routes - Matches
 app.get('/api/matches', async (req, res) => {
     try {
-        const matches = await db.collection('matches').find({}).toArray();
+        const { league } = req.query;
+        if (!league) {
+            return res.status(400).json({ error: 'League query parameter is required' });
+        }
+        const matches = await db.collection('matches').find({ league }).toArray();
         res.json(matches);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -90,7 +98,7 @@ app.get('/api/matches', async (req, res) => {
 app.post('/api/matches', async (req, res) => {
     try {
         const match = {
-            ...req.body,
+            ...req.body, // Should now include league
             createdAt: new Date()
         };
         
@@ -215,4 +223,3 @@ process.on('SIGINT', async () => {
     console.log('👋 MongoDB connection closed');
     process.exit(0);
 });
-
