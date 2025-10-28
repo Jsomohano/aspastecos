@@ -1,81 +1,86 @@
 import React, { useEffect, useState } from 'react';
 import { matchAPI } from '../api/client';
+import { useNavigate } from 'react-router-dom';
 
 interface Match {
   _id: string;
   date: string;
   opponent: string;
-  ourGoals: number;
-  opponentGoals: number;
-  leaguePosition?: number;
+  result: 'Victoria' | 'Derrota' | 'Empate';
+  score: string;
+  goalsByPlayer?: Record<string, number>;
 }
 
-const Matches: React.FC = () => {
+interface MatchesProps {
+  league: string;
+}
+
+const Matches: React.FC<MatchesProps> = ({ league }) => {
   const [matches, setMatches] = useState<Match[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadMatches();
-  }, []);
+  }, [league]);
 
   const loadMatches = async () => {
     try {
-      const res = await matchAPI.getAll();
-      setMatches(res.data);
+      const res = await matchAPI.getAll(league);
+      const sortedMatches = res.data.sort((a: Match, b: Match) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setMatches(sortedMatches);
     } catch (error) {
       console.error('Error loading matches:', error);
+      setMatches([]);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Borrar este partido?')) {
+    if (confirm('¿Estás seguro de que quieres borrar este partido? Esta acción también revertirá las estadísticas de los jugadores.')) {
       try {
         await matchAPI.delete(id);
         loadMatches();
       } catch (error) {
         console.error('Error deleting match:', error);
+        alert('Error al borrar el partido.');
       }
     }
   };
 
   return (
     <div className="tab-content">
-      <h2>Historial de Partidos</h2>
+       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+        <h2>Historial de Partidos</h2>
+        <button className="btn" onClick={() => navigate('/add-match')}>➕ Agregar Partido</button>
+      </div>
+
       {matches.length === 0 ? (
-        <p className="text-center">No hay partidos registrados.</p>
+        <p className="text-center">No hay partidos registrados para la liga {league}.</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
-          {matches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(match => {
-            const result = match.ourGoals > match.opponentGoals ? 'Victoria' : 
-                          match.ourGoals < match.opponentGoals ? 'Derrota' : 'Empate';
-            const resultColor = match.ourGoals > match.opponentGoals ? 'var(--success-color)' : 
-                               match.ourGoals < match.opponentGoals ? 'var(--danger-color)' : 'var(--warning-color)';
-            
-            return (
-              <div key={match._id} style={{ background: '#f8f9fa', padding: '20px', borderRadius: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-                  <span>{new Date(match.date).toLocaleDateString('es-ES')}</span>
-                  <span style={{ fontWeight: 'bold', color: resultColor }}>{result}</span>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(match._id)}>🗑️</button>
-                  </div>
+        <div className="matches-list">
+          {matches.map(match => (
+            <div key={match._id} className="match-card">
+              <div className="match-card-header">
+                <span>{new Date(match.date).toLocaleDateString()}</span>
+                <span className={`match-result ${match.result.toLowerCase()}`}>{match.result}</span>
+              </div>
+              <div className="match-card-body">
+                <div className="team-info">
+                  <span className="team-name">Nuestro Equipo</span>
+                  <span className="score">{match.score.split('-')[0]}</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
-                  <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '5px' }}>Rival</div>
-                    <div style={{ fontWeight: 'bold' }}>{match.opponent}</div>
-                  </div>
-                  <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '5px' }}>Resultado</div>
-                    <div style={{ fontWeight: 'bold' }}>{match.ourGoals} - {match.opponentGoals}</div>
-                  </div>
-                  <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '5px' }}>Posición Liga</div>
-                    <div style={{ fontWeight: 'bold' }}>{match.leaguePosition || 'N/A'}</div>
-                  </div>
+                <div className="vs">VS</div>
+                <div className="team-info opponent">
+                  <span className="score">{match.score.split('-')[1]}</span>
+                  <span className="team-name">{match.opponent}</span>
                 </div>
               </div>
-            );
-          })}
+              <div className="match-card-footer">
+                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(match._id)}>
+                  🗑️ Borrar
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -83,4 +88,3 @@ const Matches: React.FC = () => {
 };
 
 export default Matches;
-

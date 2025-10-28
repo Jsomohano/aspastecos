@@ -1,141 +1,154 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { playerAPI, matchAPI } from '../api/client';
+import { matchAPI, playerAPI } from '../api/client';
 
 interface Player {
   _id: string;
   name: string;
 }
 
-const AddMatch: React.FC = () => {
-  const navigate = useNavigate();
+interface AddMatchProps {
+  league: string;
+}
+
+const AddMatch: React.FC<AddMatchProps> = ({ league }) => {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [formData, setFormData] = useState({
-    date: '',
-    opponent: '',
-    ourGoals: '',
-    opponentGoals: '',
-    leaguePosition: '',
-    goalsByPlayer: {} as Record<string, number>,
-    playersPlayed: [] as string[],
-  });
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [opponent, setOpponent] = useState('');
+  const [result, setResult] = useState<'Victoria' | 'Derrota' | 'Empate'>('Victoria');
+  const [score, setScore] = useState('');
+  const [playersPlayed, setPlayersPlayed] = useState<string[]>([]);
+  const [goalsByPlayer, setGoalsByPlayer] = useState<Record<string, number>>({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadPlayers();
-  }, []);
+  }, [league]);
 
   const loadPlayers = async () => {
     try {
-      const res = await playerAPI.getAll();
+      const res = await playerAPI.getAll(league);
       setPlayers(res.data);
     } catch (error) {
       console.error('Error loading players:', error);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!players.length) {
-      alert('Primero debes agregar jugadores');
-      return;
-    }
+  const handlePlayerPlayedChange = (playerId: string) => {
+    setPlayersPlayed(prev =>
+      prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId]
+    );
+  };
 
-    try {
-      await matchAPI.create({
-        date: formData.date,
-        opponent: formData.opponent,
-        ourGoals: parseInt(formData.ourGoals),
-        opponentGoals: parseInt(formData.opponentGoals),
-        leaguePosition: formData.leaguePosition ? parseInt(formData.leaguePosition) : null,
-        goalsByPlayer: formData.goalsByPlayer,
-        playersPlayed: formData.playersPlayed,
-      });
-      alert('¡Partido guardado exitosamente!');
-      navigate('/matches');
-    } catch (error) {
-      console.error('Error creating match:', error);
-      alert('Error al guardar partido');
+  const handleGoalChange = (playerId: string, goals: string) => {
+    const numGoals = parseInt(goals, 10);
+    if (!isNaN(numGoals) && numGoals >= 0) {
+      setGoalsByPlayer(prev => ({ ...prev, [playerId]: numGoals }));
+    } else if (goals === '') {
+      const newGoals = { ...goalsByPlayer };
+      delete newGoals[playerId];
+      setGoalsByPlayer(newGoals);
     }
   };
 
-  const togglePlayerPlayed = (playerId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      playersPlayed: prev.playersPlayed.includes(playerId)
-        ? prev.playersPlayed.filter(id => id !== playerId)
-        : [...prev.playersPlayed, playerId],
-    }));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!score.match(/^\d+-\d+$/)) {
+      alert('El marcador debe tener el formato "Goles-Goles", por ejemplo, "3-1".');
+      return;
+    }
+
+    const newMatch = {
+      date,
+      opponent,
+      result,
+      score,
+      playersPlayed,
+      goalsByPlayer,
+      league, // Se añade la liga al partido
+    };
+
+    try {
+      await matchAPI.create(newMatch);
+      navigate('/matches');
+    } catch (error) {
+      console.error('Error creating match:', error);
+      alert('Error al agregar el partido.');
+    }
   };
 
   return (
     <div className="tab-content">
-      <h2>Registrar Nuevo Partido</h2>
-      {players.length === 0 ? (
-        <p className="text-center">Primero debes agregar jugadores al equipo.</p>
-      ) : (
-        <form onSubmit={handleSubmit} style={{ maxWidth: '600px', margin: '0 auto' }}>
+      <form onSubmit={handleSubmit} className="add-match-form">
+        <h2>Agregar Nuevo Partido ({league})</h2>
+        
+        <div className="form-grid">
           <div className="form-group">
-            <label>Fecha del Partido</label>
-            <input type="date" required value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
+            <label>Fecha</label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div className="form-group">
             <label>Rival</label>
-            <input type="text" required placeholder="Nombre del equipo rival" value={formData.opponent} onChange={(e) => setFormData({...formData, opponent: e.target.value})} />
+            <input type="text" value={opponent} onChange={e => setOpponent(e.target.value)} required />
           </div>
           <div className="form-group">
-            <label>Nuestros Goles</label>
-            <input type="number" min="0" required value={formData.ourGoals} onChange={(e) => setFormData({...formData, ourGoals: e.target.value})} />
+            <label>Resultado</label>
+            <select value={result} onChange={e => setResult(e.target.value as any)} required>
+              <option value="Victoria">Victoria</option>
+              <option value="Derrota">Derrota</option>
+              <option value="Empate">Empate</option>
+            </select>
           </div>
           <div className="form-group">
-            <label>Goles del Rival</label>
-            <input type="number" min="0" required value={formData.opponentGoals} onChange={(e) => setFormData({...formData, opponentGoals: e.target.value})} />
+            <label>Marcador (Ej: 3-1)</label>
+            <input type="text" value={score} onChange={e => setScore(e.target.value)} required pattern="\d+-\d+" />
           </div>
-          <div className="form-group">
-            <label>Posición en Liga</label>
-            <input type="number" min="1" placeholder="Posición después del partido" value={formData.leaguePosition} onChange={(e) => setFormData({...formData, leaguePosition: e.target.value})} />
-          </div>
+        </div>
 
-          <h3 style={{ marginTop: '30px', marginBottom: '15px' }}>Goles por Jugador</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
+        <div className="form-group">
+          <h3>Jugadores que participaron</h3>
+          <div className="checkbox-grid">
             {players.map(player => (
-              <div key={player._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
-                <label style={{ minWidth: '120px' }}>{player.name}:</label>
-                <input
-                  type="number"
-                  min="0"
-                  style={{ width: '60px' }}
-                  value={formData.goalsByPlayer[player._id] || 0}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    goalsByPlayer: {...formData.goalsByPlayer, [player._id]: parseInt(e.target.value) || 0}
-                  })}
-                />
-              </div>
-            ))}
-          </div>
-
-          <h3 style={{ marginBottom: '15px' }}>Jugadores que Participaron</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '25px' }}>
-            {players.map(player => (
-              <div key={player._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
+              <div key={player._id} className="checkbox-item">
                 <input
                   type="checkbox"
-                  checked={formData.playersPlayed.includes(player._id)}
-                  onChange={() => togglePlayerPlayed(player._id)}
+                  id={`player-${player._id}`}
+                  checked={playersPlayed.includes(player._id)}
+                  onChange={() => handlePlayerPlayedChange(player._id)}
                 />
-                <label>{player.name}</label>
+                <label htmlFor={`player-${player._id}`}>{player.name}</label>
               </div>
             ))}
           </div>
+        </div>
 
-          <button type="submit" className="btn" style={{ width: '100%', padding: '15px', fontSize: '16px' }}>
-            💾 Guardar Partido
-          </button>
-        </form>
-      )}
+        <div className="form-group">
+          <h3>Goles por Jugador</h3>
+          <div className="goals-grid">
+            {players
+              .filter(p => playersPlayed.includes(p._id))
+              .map(player => (
+                <div key={player._id} className="goal-input-item">
+                  <label>{player.name}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={goalsByPlayer[player._id] || ''}
+                    onChange={(e) => handleGoalChange(player._id, e.target.value)}
+                  />
+                </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+          <button type="submit" className="btn">✅ Guardar Partido</button>
+          <button type="button" className="btn btn-danger" onClick={() => navigate('/matches')}>❌ Cancelar</button>
+        </div>
+      </form>
     </div>
   );
 };
 
 export default AddMatch;
-
