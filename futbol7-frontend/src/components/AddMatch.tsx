@@ -16,16 +16,13 @@ const AddMatch: React.FC<AddMatchProps> = ({ league, isEditing }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [opponent, setOpponent] = useState('');
-  
-  // Estado para el marcador dinámico
   const [homeScore, setHomeScore] = useState('');
   const [awayScore, setAwayScore] = useState('');
-  
   const [playersPlayed, setPlayersPlayed] = useState<string[]>([]);
   const [goalsByPlayer, setGoalsByPlayer] = useState<Record<string, number>>({});
   
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>(); // Obtiene el ID de la URL si estamos editando
+  const { id } = useParams<{ id: string }>();
 
   useEffect(() => {
     loadPlayers();
@@ -51,7 +48,6 @@ const AddMatch: React.FC<AddMatchProps> = ({ league, isEditing }) => {
       setOpponent(match.opponent);
       setPlayersPlayed(match.playersPlayed || []);
       setGoalsByPlayer(match.goalsByPlayer || {});
-      
       const [hScore, aScore] = match.score.split('-');
       setHomeScore(hScore);
       setAwayScore(aScore);
@@ -70,6 +66,18 @@ const AddMatch: React.FC<AddMatchProps> = ({ league, isEditing }) => {
     setPlayersPlayed(prev =>
       prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId]
     );
+  };
+
+  // --- ¡NUEVA FUNCIÓN AQUÍ! ---
+  // Si no todos están seleccionados, los selecciona.
+  // Si ya están todos seleccionados, los deselecciona.
+  const handleSelectAll = () => {
+    const allPlayerIds = players.map(p => p._id);
+    if (playersPlayed.length === allPlayerIds.length) {
+      setPlayersPlayed([]); // Deseleccionar todos
+    } else {
+      setPlayersPlayed(allPlayerIds); // Seleccionar todos
+    }
   };
 
   const handleGoalChange = (playerId: string, goals: string) => {
@@ -143,7 +151,13 @@ const AddMatch: React.FC<AddMatchProps> = ({ league, isEditing }) => {
         </div>
 
         <div className="form-group">
-          <h3>Jugadores que participaron</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3>Jugadores que participaron</h3>
+            {/* --- ¡NUEVO BOTÓN AQUÍ! --- */}
+            <button type="button" className="btn btn-sm" onClick={handleSelectAll}>
+              {playersPlayed.length === players.length ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
+            </button>
+          </div>
           <div className="checkbox-grid">
             {players.map(player => (
               <div key={player._id} className="checkbox-item">
