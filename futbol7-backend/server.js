@@ -37,22 +37,17 @@ app.get('/api/players', async (req, res) => {
         }
 
         const aggregationPipeline = [
-            // 1. Encontrar jugadores que estén en la liga solicitada
             { $match: { leagues: league } },
-            
-            // 2. Buscar todos los partidos de esa liga para obtener estadísticas
             {
                 $lookup: {
                     from: 'matches',
                     let: { playerId: '$_id' },
                     pipeline: [
-                        { $match: { $expr: { $and: [ { $eq: ['$league', league] }, { $in: ['$$playerId', '$playersPlayed'] } ] } } },
+                        { $match: { $expr: { $and: [ { $eq: ['$league', league] }, { $in: ['$$playerId', { '$ifNull': ['$playersPlayed', []] }] } ] } } },
                     ],
                     as: 'playedMatches'
                 }
             },
-
-            // 3. Calcular goles y partidos jugados a partir de los partidos encontrados
             {
                 $addFields: {
                     matchesPlayed: { $size: '$playedMatches' },
@@ -70,8 +65,6 @@ app.get('/api/players', async (req, res) => {
                     }
                 }
             },
-            
-            // 4. Limpiar los campos que no necesitamos enviar al frontend
             { $project: { playedMatches: 0 } }
         ];
 
@@ -84,12 +77,11 @@ app.get('/api/players', async (req, res) => {
 
 app.post('/api/players', async (req, res) => {
     try {
-        // Las estadísticas ya no se guardan aquí
         const player = {
             name: req.body.name,
             position: req.body.position,
             number: req.body.number,
-            leagues: req.body.leagues || [], // Ahora es un array de ligas
+            leagues: req.body.leagues || [],
             createdAt: new Date()
         };
         const result = await db.collection('players').insertOne(player);
@@ -122,7 +114,6 @@ app.delete('/api/players/:id', async (req, res) => {
     try {
         const { id } = req.params;
         await db.collection('players').deleteOne({ _id: new ObjectId(id) });
-        // Opcional: También podrías querer eliminar al jugador de los partidos en los que participó.
         res.json({ message: 'Player deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -131,7 +122,6 @@ app.delete('/api/players/:id', async (req, res) => {
 
 
 // --- API Routes - Matches ---
-// (Las rutas de partidos ya no necesitan actualizar las estadísticas de los jugadores)
 
 app.get('/api/matches', async (req, res) => {
     try {
@@ -146,26 +136,34 @@ app.get('/api/matches', async (req, res) => {
     }
 });
 
+// ** CORRECCIÓN AQUÍ **
 app.post('/api/matches', async (req, res) => {
     try {
-        const match = {
-            ...req.body,
+        const { playersPlayed, ...rest } = req.body;
+        const matchData = {
+            ...rest,
+            playersPlayed: (playersPlayed || []).map(id => new ObjectId(id)), // Convierte strings a ObjectId
             createdAt: new Date()
         };
-        const result = await db.collection('matches').insertOne(match);
-        res.status(201).json({ ...match, _id: result.insertedId });
+        const result = await db.collection('matches').insertOne(matchData);
+        res.status(201).json({ ...matchData, _id: result.insertedId });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// La ruta PUT de partidos ya no necesita actualizar estadísticas
+// ** CORRECCIÓN AQUÍ **
 app.put('/api/matches/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const { playersPlayed, ...rest } = req.body;
+        const updateData = {
+            ...rest,
+            playersPlayed: (playersPlayed || []).map(id => new ObjectId(id)), // Convierte strings a ObjectId
+        };
         await db.collection('matches').updateOne(
             { _id: new ObjectId(id) },
-            { $set: req.body }
+            { $set: updateData }
         );
         res.json({ message: 'Match updated successfully' });
     } catch (error) {
@@ -173,7 +171,6 @@ app.put('/api/matches/:id', async (req, res) => {
     }
 });
 
-// La ruta DELETE de partidos ya no necesita revertir estadísticas
 app.delete('/api/matches/:id', async (req, res) => {
     try {
         const { id } = req.params;
