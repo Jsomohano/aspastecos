@@ -5,7 +5,10 @@ const { MongoClient, ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+
 dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -46,16 +49,37 @@ app.post('/api/register', async (req, res) => {
   });
 
 app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
-    const user = await db.collection('users').findOne({ username });
-  
-    if (user && await bcrypt.compare(password, user.password)) {
-      const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '8h' });
-      res.json({ token });
-    } else {
-      res.status(401).json({ error: 'Invalid credentials' });
+    try {
+        const { username, password } = req.body || {};
+        console.log('LOGIN REQ:', { usernameProvided: username });
+
+        if (!db) {
+            console.error('LOGIN ERROR: No DB connection');
+            return res.status(500).json({ error: 'Database not connected' });
+        }
+
+        if (!username || !password) {
+            console.log('LOGIN MISSING FIELDS', { usernameProvided: username });
+            return res.status(400).json({ error: 'Username and password required' });
+        }
+
+        const user = await db.collection('users').findOne({ username });
+        console.log('LOGIN DB USER:', user ? { usernameStored: user.username, pwHashStartsWith: user.password?.slice(0,4) } : null);
+
+        const isMatch = user ? await bcrypt.compare(password, user.password) : false;
+        console.log('LOGIN compare result:', isMatch);
+
+        if (user && isMatch) {
+            const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '8h' });
+            return res.json({ token });
+        }
+
+        return res.status(401).json({ error: 'Invalid credentials' });
+    } catch (error) {
+        console.error('LOGIN ERROR:', error);
+        return res.status(500).json({ error: 'Internal server error', details: error.message });
     }
-  });
+});
 
   const protect = (req, res, next) => {
     const authHeader = req.headers.authorization;
