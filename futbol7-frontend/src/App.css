@@ -97,3 +97,75 @@
     font-size: 1.5rem;
     font-weight: bold;
   }
+
+  .matches-list {
+    display: grid;
+    gap: 20px;
+  }
+  
+  .match-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .match-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  
+  .match-result {
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 5px;
+    color: white;
+  }
+  
+  .match-result.victoria { background-color: var(--success-color); }
+  .match-result.derrota { background-color: var(--danger-color); }
+  .match-result.empate { background-color: var(--warning-color); }
+  
+  .match-card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .match-card-body .team-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100px;
+  }
+  
+  .match-card-body .team-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
+  
+  .match-card-body .score {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+  
+  .match-card-body .vs {
+    font-size: 1rem;
+    color: #999;
+  }
+  
+  .match-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 15px;
+    margin-top: 5px;
+  }
