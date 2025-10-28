@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { MongoClient, ObjectId } = require('mongodb');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 dotenv.config();
 
@@ -28,6 +30,48 @@ async function connectDB() {
 connectDB();
 
 // --- API Routes - Players ---
+
+app.post('/api/register', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+      const newUser = await db.collection('users').insertOne({ username, password: hashedPassword });
+      res.status(201).json({ message: 'User created', userId: newUser.insertedId });
+    } catch (error) {
+      res.status(500).json({ error: 'Error creating user' });
+    }
+  });
+
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+    const user = await db.collection('users').findOne({ username });
+  
+    if (user && await bcrypt.compare(password, user.password)) {
+      const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '8h' });
+      res.json({ token });
+    } else {
+      res.status(401).json({ error: 'Invalid credentials' });
+    }
+  });
+
+  const protect = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).json({ error: 'Token is not valid' });
+        }
+        req.user = decoded; // Puedes usar req.user en tus rutas si lo necesitas
+        next();
+      });
+    } else {
+      res.status(401).json({ error: 'No token, authorization denied' });
+    }
+  };
 
 app.get('/api/players', async (req, res) => {
     try {
