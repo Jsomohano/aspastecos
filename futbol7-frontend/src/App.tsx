@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Header from './components/Header'; // Importamos el nuevo componente
 import Dashboard from './components/Dashboard';
 import Players from './components/Players';
 import Matches from './components/Matches';
@@ -14,62 +15,17 @@ function App() {
   return (
     <Router>
       <div className="app">
-        <header className="header">
-          <div className="header-content">
-            <h1>⚽ Estadísticas del Equipo</h1>
-            <p>Liga de {league}</p>
-          </div>
-          <div className="league-selector">
-            <button 
-              className={league === 'Fut-7' ? 'active' : ''} 
-              onClick={() => setLeague('Fut-7')}
-            >
-              Fut-7
-            </button>
-            <button 
-              className={league === 'Fut-5' ? 'active' : ''} 
-              onClick={() => setLeague('Fut-5')}
-            >
-              Fut-5
-            </button>
-          </div>
-        </header>
+        {/* El nuevo Header va aquí, pasándole las props necesarias */}
+        <Header league={league} setLeague={setLeague} />
 
-        <nav className="nav-tabs">
-          <NavLink 
-            to="/" 
-            className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}
-            end
-          >
-            📊 Dashboard
-          </NavLink>
-          <NavLink 
-            to="/players" 
-            className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}
-          >
-            👥 Jugadores
-          </NavLink>
-          <NavLink 
-            to="/matches" 
-            className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}
-          >
-            📅 Partidos
-          </NavLink>
-          <NavLink 
-            to="/add-match" 
-            className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}
-          >
-            ➕ Agregar Partido
-          </NavLink>
-        </nav>
-
+        {/* El contenido principal de la página se renderiza aquí abajo */}
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Dashboard league={league} />} />
             <Route path="/players" element={<Players league={league} />} />
             <Route path="/matches" element={<Matches league={league} />} />
+            {/* Las rutas para agregar y editar se mantienen igual */}
             <Route path="/add-match" element={<AddMatch league={league} />} />
-            {/* RUTA NUEVA PARA EDITAR */}
             <Route path="/edit-match/:id" element={<AddMatch league={league} isEditing />} />
           </Routes>
         </main>
