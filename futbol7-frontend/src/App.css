@@ -70,3 +70,30 @@
     align-items: center;
     gap: 5px;
   }
+
+  .score-input-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 10px;
+  }
+  
+  .score-input-container .team-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    width: 120px;
+    text-align: center;
+  }
+  
+  .score-input-container .score-input {
+    width: 60px;
+    text-align: center;
+    font-size: 1.2rem;
+    padding: 8px;
+  }
+  
+  .score-input-container .separator {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }

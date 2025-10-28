@@ -20,6 +20,7 @@ export const playerAPI = {
 // Match API
 export const matchAPI = {
   getAll: (league: string) => apiClient.get('/matches', { params: { league } }),
+  getById: (id: string) => apiClient.get(`/matches/${id}`), // <-- NUEVA FUNCIÓN
   create: (data: any) => apiClient.post('/matches', data),
   update: (id: string, data: any) => apiClient.put(`/matches/${id}`, data),
   delete: (id: string) => apiClient.delete(`/matches/${id}`),

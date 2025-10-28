@@ -8,7 +8,6 @@ interface Match {
   opponent: string;
   result: 'Victoria' | 'Derrota' | 'Empate';
   score: string;
-  goalsByPlayer?: Record<string, number>;
 }
 
 interface MatchesProps {
@@ -35,7 +34,7 @@ const Matches: React.FC<MatchesProps> = ({ league }) => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Estás seguro de que quieres borrar este partido? Esta acción también revertirá las estadísticas de los jugadores.')) {
+    if (confirm('¿Estás seguro de que quieres borrar este partido?')) {
       try {
         await matchAPI.delete(id);
         loadMatches();
@@ -65,7 +64,7 @@ const Matches: React.FC<MatchesProps> = ({ league }) => {
               </div>
               <div className="match-card-body">
                 <div className="team-info">
-                  <span className="team-name">Nuestro Equipo</span>
+                  <span className="team-name">Aspastecos</span>
                   <span className="score">{match.score.split('-')[0]}</span>
                 </div>
                 <div className="vs">VS</div>
@@ -75,6 +74,9 @@ const Matches: React.FC<MatchesProps> = ({ league }) => {
                 </div>
               </div>
               <div className="match-card-footer">
+                <button className="btn btn-sm" onClick={() => navigate(`/edit-match/${match._id}`)}>
+                  ✏️ Editar
+                </button>
                 <button className="btn btn-danger btn-sm" onClick={() => handleDelete(match._id)}>
                   🗑️ Borrar
                 </button>

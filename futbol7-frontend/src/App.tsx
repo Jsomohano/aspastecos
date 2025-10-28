@@ -69,6 +69,8 @@ function App() {
             <Route path="/players" element={<Players league={league} />} />
             <Route path="/matches" element={<Matches league={league} />} />
             <Route path="/add-match" element={<AddMatch league={league} />} />
+            {/* RUTA NUEVA PARA EDITAR */}
+            <Route path="/edit-match/:id" element={<AddMatch league={league} isEditing />} />
           </Routes>
         </main>
       </div>
