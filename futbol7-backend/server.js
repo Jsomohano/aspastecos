@@ -8,11 +8,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
 let db;
 const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/futbol7';
 const client = new MongoClient(uri);
@@ -29,14 +27,55 @@ async function connectDB() {
 
 connectDB();
 
-// API Routes - Players
+// --- API Routes - Players ---
+
 app.get('/api/players', async (req, res) => {
     try {
         const { league } = req.query;
         if (!league) {
             return res.status(400).json({ error: 'League query parameter is required' });
         }
-        const players = await db.collection('players').find({ league }).toArray();
+
+        const aggregationPipeline = [
+            // 1. Encontrar jugadores que estén en la liga solicitada
+            { $match: { leagues: league } },
+            
+            // 2. Buscar todos los partidos de esa liga para obtener estadísticas
+            {
+                $lookup: {
+                    from: 'matches',
+                    let: { playerId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $and: [ { $eq: ['$league', league] }, { $in: ['$$playerId', '$playersPlayed'] } ] } } },
+                    ],
+                    as: 'playedMatches'
+                }
+            },
+
+            // 3. Calcular goles y partidos jugados a partir de los partidos encontrados
+            {
+                $addFields: {
+                    matchesPlayed: { $size: '$playedMatches' },
+                    goals: {
+                        $reduce: {
+                            input: '$playedMatches',
+                            initialValue: 0,
+                            in: {
+                                $add: [
+                                    '$$value',
+                                    { $ifNull: [ { $getField: { field: { $toString: '$_id' }, input: '$$this.goalsByPlayer' } }, 0 ] }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            
+            // 4. Limpiar los campos que no necesitamos enviar al frontend
+            { $project: { playedMatches: 0 } }
+        ];
+
+        const players = await db.collection('players').aggregate(aggregationPipeline).toArray();
         res.json(players);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -45,10 +84,12 @@ app.get('/api/players', async (req, res) => {
 
 app.post('/api/players', async (req, res) => {
     try {
+        // Las estadísticas ya no se guardan aquí
         const player = {
-            ...req.body, // name, position, number, and now league
-            goals: 0,
-            matchesPlayed: 0,
+            name: req.body.name,
+            position: req.body.position,
+            number: req.body.number,
+            leagues: req.body.leagues || [], // Ahora es un array de ligas
             createdAt: new Date()
         };
         const result = await db.collection('players').insertOne(player);
@@ -61,9 +102,15 @@ app.post('/api/players', async (req, res) => {
 app.put('/api/players/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const updateData = {
+            name: req.body.name,
+            position: req.body.position,
+            number: req.body.number,
+            leagues: req.body.leagues
+        };
         const result = await db.collection('players').updateOne(
             { _id: new ObjectId(id) },
-            { $set: req.body }
+            { $set: updateData }
         );
         res.json(result);
     } catch (error) {
@@ -75,13 +122,17 @@ app.delete('/api/players/:id', async (req, res) => {
     try {
         const { id } = req.params;
         await db.collection('players').deleteOne({ _id: new ObjectId(id) });
+        // Opcional: También podrías querer eliminar al jugador de los partidos en los que participó.
         res.json({ message: 'Player deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// API Routes - Matches
+
+// --- API Routes - Matches ---
+// (Las rutas de partidos ya no necesitan actualizar las estadísticas de los jugadores)
+
 app.get('/api/matches', async (req, res) => {
     try {
         const { league } = req.query;
@@ -98,113 +149,34 @@ app.get('/api/matches', async (req, res) => {
 app.post('/api/matches', async (req, res) => {
     try {
         const match = {
-            ...req.body, // Should now include league
+            ...req.body,
             createdAt: new Date()
         };
-        
         const result = await db.collection('matches').insertOne(match);
-        
-        // Update player statistics
-        for (const [playerId, goals] of Object.entries(match.goalsByPlayer || {})) {
-            await db.collection('players').updateOne(
-                { _id: new ObjectId(playerId) },
-                { $inc: { goals: parseInt(goals) || 0 } }
-            );
-        }
-        
-        if (match.playersPlayed) {
-            for (const playerId of match.playersPlayed) {
-                await db.collection('players').updateOne(
-                    { _id: new ObjectId(playerId) },
-                    { $inc: { matchesPlayed: 1 } }
-                );
-            }
-        }
-        
         res.status(201).json({ ...match, _id: result.insertedId });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
+// La ruta PUT de partidos ya no necesita actualizar estadísticas
 app.put('/api/matches/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const oldMatch = await db.collection('matches').findOne({ _id: new ObjectId(id) });
-        
-        // Revert old statistics
-        if (oldMatch) {
-            for (const [playerId, goals] of Object.entries(oldMatch.goalsByPlayer || {})) {
-                await db.collection('players').updateOne(
-                    { _id: new ObjectId(playerId) },
-                    { $inc: { goals: -(parseInt(goals) || 0) } }
-                );
-            }
-            
-            if (oldMatch.playersPlayed) {
-                for (const playerId of oldMatch.playersPlayed) {
-                    await db.collection('players').updateOne(
-                        { _id: new ObjectId(playerId) },
-                        { $inc: { matchesPlayed: -1 } }
-                    );
-                }
-            }
-        }
-        
-        // Update match
-        const match = req.body;
         await db.collection('matches').updateOne(
             { _id: new ObjectId(id) },
-            { $set: match }
+            { $set: req.body }
         );
-        
-        // Apply new statistics
-        for (const [playerId, goals] of Object.entries(match.goalsByPlayer || {})) {
-            await db.collection('players').updateOne(
-                { _id: new ObjectId(playerId) },
-                { $inc: { goals: parseInt(goals) || 0 } }
-            );
-        }
-        
-        if (match.playersPlayed) {
-            for (const playerId of match.playersPlayed) {
-                await db.collection('players').updateOne(
-                    { _id: new ObjectId(playerId) },
-                    { $inc: { matchesPlayed: 1 } }
-                );
-            }
-        }
-        
         res.json({ message: 'Match updated successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
+// La ruta DELETE de partidos ya no necesita revertir estadísticas
 app.delete('/api/matches/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const match = await db.collection('matches').findOne({ _id: new ObjectId(id) });
-        
-        // Revert statistics
-        if (match) {
-            for (const [playerId, goals] of Object.entries(match.goalsByPlayer || {})) {
-                await db.collection('players').updateOne(
-                    { _id: new ObjectId(playerId) },
-                    { $inc: { goals: -(parseInt(goals) || 0) } }
-                );
-            }
-            
-            if (match.playersPlayed) {
-                for (const playerId of match.playersPlayed) {
-                    await db.collection('players').updateOne(
-                        { _id: new ObjectId(playerId) },
-                        { $inc: { matchesPlayed: -1 } }
-                    );
-                }
-            }
-        }
-        
         await db.collection('matches').deleteOne({ _id: new ObjectId(id) });
         res.json({ message: 'Match deleted successfully' });
     } catch (error) {
@@ -212,12 +184,12 @@ app.delete('/api/matches/:id', async (req, res) => {
     }
 });
 
-// Start server
+
+// --- Server Start ---
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
 
-// Graceful shutdown
 process.on('SIGINT', async () => {
     await client.close();
     console.log('👋 MongoDB connection closed');
