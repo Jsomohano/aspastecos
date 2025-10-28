@@ -14,10 +14,23 @@ const Players: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', position: 'Portero', number: '' });
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     loadPlayers();
   }, []);
+
+  const handleEdit = (player: Player) => {
+    setEditingPlayer(player);
+    setFormData({ name: player.name, position: player.position, number: player.number || '' });
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingPlayer(null);
+    setFormData({ name: '', position: 'Portero', number: '' });
+  };
 
   const loadPlayers = async () => {
     try {
@@ -31,13 +44,18 @@ const Players: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await playerAPI.create(formData);
-      setShowModal(false);
-      setFormData({ name: '', position: 'Portero', number: '' });
+      if (editingPlayer) {
+        // Lógica de actualización
+        await playerAPI.update(editingPlayer._id, formData);
+      } else {
+        // Lógica de creación
+        await playerAPI.create(formData);
+      }
+      handleCloseModal();
       loadPlayers();
     } catch (error) {
-      console.error('Error creating player:', error);
-      alert('Error al agregar jugador');
+      console.error('Error saving player:', error);
+      alert('Error al guardar jugador');
     }
   };
 
@@ -69,7 +87,7 @@ const Players: React.FC = () => {
               <p><strong>Posición:</strong> {player.position}</p>
               <p><strong>Número:</strong> {player.number || 'Sin número'}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '15px' }}>
-                <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '8px' }}>
+              <div style={{ textAlign: 'center', padding: '10px', background: 'white', borderRadius: '8px' }}>
                   <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{player.goals}</div>
                   <div style={{ fontSize: '0.8rem', color: '#666' }}>Goles</div>
                 </div>
@@ -78,9 +96,14 @@ const Players: React.FC = () => {
                   <div style={{ fontSize: '0.8rem', color: '#666' }}>Partidos</div>
                 </div>
               </div>
-              <button className="btn btn-danger btn-sm" onClick={() => handleDelete(player._id)} style={{ marginTop: '10px', width: '100%' }}>
-                🗑️ Borrar
-              </button>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button className="btn btn-sm" onClick={() => handleEdit(player)} style={{ flexGrow: 1 }}>
+                  ✏️ Editar
+                </button>
+                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(player._id)} style={{ flexGrow: 1 }}>
+                  🗑️ Borrar
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -89,7 +112,7 @@ const Players: React.FC = () => {
       {showModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', padding: '30px', borderRadius: '15px', maxWidth: '500px', width: '90%' }}>
-            <h3 style={{ marginBottom: '20px' }}>Agregar Nuevo Jugador</h3>
+            <h3 style={{ marginBottom: '20px' }}>{editingPlayer ? 'Editar Jugador' : 'Agregar Nuevo Jugador'}</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Nombre del Jugador</label>
@@ -109,8 +132,8 @@ const Players: React.FC = () => {
                 <input type="number" min="1" max="99" value={formData.number} onChange={(e) => setFormData({...formData, number: e.target.value})} />
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="submit" className="btn">✅ Agregar</button>
-                <button type="button" className="btn btn-danger" onClick={() => setShowModal(false)}>❌ Cancelar</button>
+                <button type="submit" className="btn">✅ {editingPlayer ? 'Guardar Cambios' : 'Agregar'}</button>
+                <button type="button" className="btn btn-danger" onClick={handleCloseModal}>❌ Cancelar</button>
               </div>
             </form>
           </div>
