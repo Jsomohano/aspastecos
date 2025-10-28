@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { matchAPI } from '../api/client';
+import { matchAPI, playerAPI } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // <-- Importar hook de Auth
 
@@ -9,6 +9,8 @@ interface Match {
   opponent: string;
   result: 'Victoria' | 'Derrota' | 'Empate';
   score: string;
+  playersPlayed?: string[];
+  goalsByPlayer?: Record<string, number>;
 }
 
 interface MatchesProps {
@@ -17,10 +19,12 @@ interface MatchesProps {
 
 const Matches: React.FC<MatchesProps> = ({ league }) => {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [playersMap, setPlayersMap] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth(); // <-- Usar el contexto de autenticación
 
   useEffect(() => {
+    loadPlayers();
     loadMatches();
   }, [league]);
 
@@ -32,6 +36,18 @@ const Matches: React.FC<MatchesProps> = ({ league }) => {
     } catch (error) {
       console.error('Error loading matches:', error);
       setMatches([]);
+    }
+  };
+
+  const loadPlayers = async () => {
+    try {
+      const res = await playerAPI.getAll(league);
+      const map: Record<string, string> = {};
+      res.data.forEach((p: any) => { map[p._id] = p.name; });
+      setPlayersMap(map);
+    } catch (error) {
+      console.error('Error loading players for matches:', error);
+      setPlayersMap({});
     }
   };
 
@@ -78,6 +94,19 @@ const Matches: React.FC<MatchesProps> = ({ league }) => {
                   <span className="team-name">{match.opponent}</span>
                 </div>
               </div>
+              {/* Goleadores del equipo */}
+              {match.goalsByPlayer && Object.keys(match.goalsByPlayer).length > 0 && (
+                <div className="match-scorers">
+                  <strong>Goleadores:</strong>
+                  <ul>
+                    {Object.entries(match.goalsByPlayer)
+                      .filter(([_, goals]) => (goals || 0) > 0)
+                      .map(([playerId, goals]) => (
+                        <li key={playerId}>{playersMap[playerId] || playerId} ({goals})</li>
+                      ))}
+                  </ul>
+                </div>
+              )}
               {/* --- LÓGICA CONDICIONAL AQUÍ --- */}
               {isAuthenticated && (
                 <div className="match-card-footer">

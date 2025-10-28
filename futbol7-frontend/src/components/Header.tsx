@@ -22,17 +22,18 @@ const Header: React.FC<HeaderProps> = ({ league, setLeague }) => {
       <div className="navbar-container">
         <div className="navbar-left">
           <NavLink to="/" className="navbar-brand">
-            {/* ... (código del logo sin cambios) ... */}
-            <span>Aspastecos Stats</span>
+            {/* Logo: coloca tu archivo en public/logo.png y se servirá desde /logo.png */}
+            <img src="/logo.png" alt="Aspastecos" className="navbar-logo" />
           </NavLink>
+
+        </div>
+
+        <div className="navbar-right">
           <nav className="navbar-nav-desktop">
             <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Dashboard</NavLink>
             <NavLink to="/players" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Jugadores</NavLink>
             <NavLink to="/matches" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Partidos</NavLink>
           </nav>
-        </div>
-
-        <div className="navbar-right">
           <div className="league-selector-nav">
             <button className={league === 'Fut-7' ? 'active' : ''} onClick={() => setLeague('Fut-7')}>Fut-7</button>
             <button className={league === 'Fut-5' ? 'active' : ''} onClick={() => setLeague('Fut-5')}>Fut-5</button>
@@ -44,9 +45,11 @@ const Header: React.FC<HeaderProps> = ({ league, setLeague }) => {
           ) : (
             <NavLink to="/login" className="btn-login">Iniciar Sesión</NavLink>
           )}
-          
-          <button className="hamburger-menu" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            {/* ... (código del icono de hamburguesa sin cambios) ... */}
+
+          <button className="hamburger-menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
         </div>
       </div>

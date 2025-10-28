@@ -243,6 +243,13 @@
     max-width: 1200px;
     margin: 0 auto;
   }
+
+  /* Main content spacing to separate from sticky header */
+  .main-content {
+    padding: 24px;
+    margin: 20px auto 0; /* espacio superior y centrar contenido */
+    max-width: 1200px;
+  }
   
   .navbar-left, .navbar-right {
     display: flex;
@@ -261,8 +268,10 @@
   }
   
   .navbar-logo {
-    height: 32px;
-    width: 32px;
+    height: 48px;
+    width: 48px;
+    object-fit: contain;
+    display: inline-block;
   }
   
   .navbar-nav {
