@@ -64,7 +64,8 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = await db.collection('users').findOne({ username });
-        console.log('LOGIN DB USER:', user ? { usernameStored: user.username, pwHashStartsWith: user.password?.slice(0,4) } : null);
+        // Log only non-sensitive identifiers
+        console.log('LOGIN DB USER:', user ? { usernameStored: user.username, userId: user._id } : null);
 
         const isMatch = user ? await bcrypt.compare(password, user.password) : false;
         console.log('LOGIN compare result:', isMatch);
@@ -77,7 +78,7 @@ app.post('/api/login', async (req, res) => {
         return res.status(401).json({ error: 'Invalid credentials' });
     } catch (error) {
         console.error('LOGIN ERROR:', error);
-        return res.status(500).json({ error: 'Internal server error', details: error.message });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -139,7 +140,8 @@ app.get('/api/players', async (req, res) => {
         const players = await db.collection('players').aggregate(aggregationPipeline).toArray();
         res.json(players);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('GET /api/players ERROR:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -155,7 +157,8 @@ app.post('/api/players', async (req, res) => {
         const result = await db.collection('players').insertOne(player);
         res.status(201).json({ ...player, _id: result.insertedId });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('POST /api/players ERROR:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -174,7 +177,8 @@ app.put('/api/players/:id', async (req, res) => {
         );
         res.json(result);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('PUT /api/players/:id ERROR:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -184,7 +188,8 @@ app.delete('/api/players/:id', async (req, res) => {
         await db.collection('players').deleteOne({ _id: new ObjectId(id) });
         res.json({ message: 'Player deleted successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('DELETE /api/players/:id ERROR:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -200,7 +205,8 @@ app.get('/api/matches', async (req, res) => {
         const matches = await db.collection('matches').find({ league }).toArray();
         res.json(matches);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('GET /api/matches ERROR:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -216,7 +222,8 @@ app.post('/api/matches', async (req, res) => {
         const result = await db.collection('matches').insertOne(matchData);
         res.status(201).json({ ...matchData, _id: result.insertedId });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('POST /api/matches ERROR:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -235,7 +242,8 @@ app.put('/api/matches/:id', async (req, res) => {
         );
         res.json({ message: 'Match updated successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('PUT /api/matches/:id ERROR:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -245,7 +253,8 @@ app.delete('/api/matches/:id', async (req, res) => {
         await db.collection('matches').deleteOne({ _id: new ObjectId(id) });
         res.json({ message: 'Match deleted successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('DELETE /api/matches/:id ERROR:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
