@@ -220,3 +220,202 @@
     cursor: pointer;
     flex-grow: 1; /* Asegura que el nombre ocupe el espacio disponible */
   }
+  /* ... (tu CSS existente va aquí arriba) ... */
+
+/* --- Estilos para la Nueva Barra de Navegación (Header) --- */
+
+.navbar {
+    width: 100%;
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0 20px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 64px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .navbar-left, .navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 1.2rem;
+  }
+  
+  .navbar-logo {
+    height: 32px;
+    width: 32px;
+  }
+  
+  .navbar-nav {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .nav-link {
+    text-decoration: none;
+    color: #333;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  .nav-link:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .nav-link.active {
+    background-color: var(--primary-color);
+    color: white;
+  }
+  
+  .league-selector-nav {
+    display: flex;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    padding: 4px;
+  }
+  
+  .league-selector-nav button {
+    border: none;
+    background-color: transparent;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  .league-selector-nav button.active {
+    background-color: #fff;
+    color: var(--primary-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .btn-login {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .hamburger-menu {
+    display: none; /* Se mostrará solo en pantallas pequeñas */
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  /* --- Diseño Responsivo Básico --- */
+  @media (max-width: 768px) {
+    .navbar-nav {
+      display: none; /* Ocultar enlaces en pantallas pequeñas */
+    }
+    .hamburger-menu {
+      display: block; /* Mostrar menú hamburguesa */
+    }
+  }
+  /* ... (tu CSS existente va aquí arriba) ... */
+
+/* --- Estilos para el Menú Móvil Funcional --- */
+
+/* Navegación para escritorio (le cambiamos el nombre a la clase) */
+.navbar-nav-desktop {
+    display: flex;
+    gap: 15px;
+  }
+  
+  /* El menú móvil estará oculto por defecto */
+  .navbar-nav-mobile {
+    display: none;
+  }
+  
+  .hamburger-menu {
+    display: none; /* Oculto en escritorio */
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+  }
+  
+  /* --- Diseño Responsivo --- */
+  /* Cuando la pantalla sea de 768px o menos... */
+  @media (max-width: 768px) {
+    /* Ocultamos los enlaces del escritorio */
+    .navbar-nav-desktop {
+      display: none;
+    }
+    
+    /* Mostramos el botón de hamburguesa */
+    .hamburger-menu {
+      display: block;
+    }
+  
+    /* Mostramos el menú móvil como una lista vertical */
+    .navbar-nav-mobile {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      background-color: #fff;
+      padding: 10px 0;
+      border-top: 1px solid #e0e0e0;
+    }
+  
+    /* Estilos para los enlaces dentro del menú móvil */
+    .navbar-nav-mobile .nav-link {
+      width: 100%;
+      text-align: center;
+      padding: 12px 0;
+    }
+  }
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+  }
+  
+  .login-form {
+    width: 100%;
+    max-width: 400px;
+    padding: 30px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  
+  .login-form h2 {
+    text-align: center;
+    margin-bottom: 25px;
+  }
+  
+  .error-message {
+    color: var(--danger-color);
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 15px;
+  }

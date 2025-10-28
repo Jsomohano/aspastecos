@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { matchAPI } from '../api/client';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // <-- Importar hook de Auth
 
 interface Match {
   _id: string;
@@ -17,6 +18,7 @@ interface MatchesProps {
 const Matches: React.FC<MatchesProps> = ({ league }) => {
   const [matches, setMatches] = useState<Match[]>([]);
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth(); // <-- Usar el contexto de autenticación
 
   useEffect(() => {
     loadMatches();
@@ -49,7 +51,10 @@ const Matches: React.FC<MatchesProps> = ({ league }) => {
     <div className="tab-content">
        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
         <h2>Historial de Partidos</h2>
-        <button className="btn" onClick={() => navigate('/add-match')}>➕ Agregar Partido</button>
+        {/* --- LÓGICA CONDICIONAL AQUÍ --- */}
+        {isAuthenticated && (
+          <button className="btn" onClick={() => navigate('/add-match')}>➕ Agregar Partido</button>
+        )}
       </div>
 
       {matches.length === 0 ? (
@@ -73,14 +78,17 @@ const Matches: React.FC<MatchesProps> = ({ league }) => {
                   <span className="team-name">{match.opponent}</span>
                 </div>
               </div>
-              <div className="match-card-footer">
-                <button className="btn btn-sm" onClick={() => navigate(`/edit-match/${match._id}`)}>
-                  ✏️ Editar
-                </button>
-                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(match._id)}>
-                  🗑️ Borrar
-                </button>
-              </div>
+              {/* --- LÓGICA CONDICIONAL AQUÍ --- */}
+              {isAuthenticated && (
+                <div className="match-card-footer">
+                  <button className="btn btn-sm" onClick={() => navigate(`/edit-match/${match._id}`)}>
+                    ✏️ Editar
+                  </button>
+                  <button className="btn btn-danger btn-sm" onClick={() => handleDelete(match._id)}>
+                    🗑️ Borrar
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

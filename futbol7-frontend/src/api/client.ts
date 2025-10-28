@@ -15,12 +15,21 @@ export const playerAPI = {
   create: (data: any) => apiClient.post('/players', data),
   update: (id: string, data: any) => apiClient.put(`/players/${id}`, data),
   delete: (id: string) => apiClient.delete(`/players/${id}`),
+  
+  // --- FUNCIÓN QUE FALTABA AÑADIDA AQUÍ ---
+  uploadPhoto: (file: File) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return apiClient.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // Match API
 export const matchAPI = {
   getAll: (league: string) => apiClient.get('/matches', { params: { league } }),
-  getById: (id: string) => apiClient.get(`/matches/${id}`), // <-- NUEVA FUNCIÓN
+  getById: (id: string) => apiClient.get(`/matches/${id}`),
   create: (data: any) => apiClient.post('/matches', data),
   update: (id: string, data: any) => apiClient.put(`/matches/${id}`, data),
   delete: (id: string) => apiClient.delete(`/matches/${id}`),
